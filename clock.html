@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pink Clock</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Asta+Sans:wght@300..800&family=Jua&display=swap');
+</style>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{width:100%;height:100%;background:transparent;overflow:hidden}
+  body{font-family:'Quicksand',sans-serif}
+
+  /* 임베드 영역 전체를 채우고, 내부 크기는 영역 크기(cqw/cqh/cqmin)에 비례 */
+  .clock{
+    position:relative; overflow:hidden;
+    width:100%; height:100%;
+    container-type:size;
+    border-radius:min(9cqmin,32px);
+    color:var(--text);
+    --accent:#fff; --text:#fff; --soft:rgba(255,255,255,.8);
+    --day-bg:rgba(255,255,255,.18); --today-bg:#ff8fb6; --today-text:#3a2550;
+  }
+
+  /* ===== 4개 시간대 팔레트 ===== */
+  /* 00–06 깊은 밤 */
+  .clock.t0{
+    --accent:#c4dbff; --text:#dbe8ff; --soft:rgba(196,219,255,.75);
+    --day-bg:rgba(255,255,255,.1); --today-bg:#7fb2ff; --today-text:#0b1026;
+  }
+  /* 06–12 아침 */
+  .clock.t1{
+    --accent:#1f8a70; --text:#2f6b5f; --soft:#4f8f80;
+    --day-bg:rgba(255,255,255,.55); --today-bg:#1f8a70; --today-text:#fff;
+  }
+  /* 12–18 오후 */
+  .clock.t2{
+    --accent:#0e6fc2; --text:#1c5a8c; --soft:#3b82b3;
+    --day-bg:rgba(255,255,255,.55); --today-bg:#0e6fc2; --today-text:#fff;
+  }
+  /* 18–24 저녁/밤 */
+  .clock.t3{
+    --accent:#ffe3c4; --text:#fff0e0; --soft:rgba(255,235,215,.82);
+    --day-bg:rgba(255,255,255,.15); --today-bg:#ffb36b; --today-text:#3a1c5c;
+  }
+
+  /* ===== 배경 레이어 ===== */
+  .sky,.deco{position:absolute;opacity:0;transition:opacity .9s}
+  .sky{inset:0}
+  .sky-0{background:linear-gradient(180deg,#0b1026 0%,#1b2a5e 55%,#2f4f8f 100%)}
+  .sky-1{background:linear-gradient(180deg,#fff1c9 0%,#ffd8b0 40%,#bfe9d8 100%)}
+  .sky-2{background:linear-gradient(180deg,#4fa8ff 0%,#8fd3ff 55%,#e6f7c8 100%)}
+  .sky-3{background:linear-gradient(180deg,#3a1c5c 0%,#c2457a 55%,#ff9a5c 100%)}
+
+  .clock.t0 .sky-0,.clock.t1 .sky-1,.clock.t2 .sky-2,.clock.t3 .sky-3{opacity:1}
+
+  /* 해 / 달: 우상단 같은 자리, 크기는 영역에 비례 */
+  .body-slot{
+    top:5cqmin; right:5cqmin;
+    width:min(17cqmin,22cqh); aspect-ratio:1; border-radius:50%;
+  }
+  .sun{
+    background:radial-gradient(circle,#fff8d2 0%,#ffe08a 60%,#ffc565 100%);
+    box-shadow:0 0 6cqmin 3cqmin rgba(255,220,130,.55);
+  }
+  .clock.t1 .sun{ /* 아침 해: 부드러운 분홍빛 */
+    background:radial-gradient(circle,#fff6d6 0%,#ffd98a 60%,#ffb347 100%);
+    box-shadow:0 0 6cqmin 3cqmin rgba(255,190,90,.5);
+  }
+  .clock.t1 .sun,.clock.t2 .sun{opacity:1}
+
+  .moon{ filter:drop-shadow(0 0 1.6cqmin rgba(255,240,190,.55)) }
+  .moon svg{width:100%;height:100%;display:block}
+  .clock.t0 .moon,.clock.t3 .moon{opacity:1}
+
+  /* 구름 (오후/아침) */
+  .cloud{background:#fff;border-radius:999px;height:3.2cqmin}
+  .cloud::before,.cloud::after{content:"";position:absolute;background:#fff;border-radius:50%}
+  .cloud.c1{width:13cqmin;left:8cqmin;bottom:22cqmin}
+  .cloud.c1::before{width:6cqmin;height:6cqmin;top:-3cqmin;left:2cqmin}
+  .cloud.c1::after{width:4.4cqmin;height:4.4cqmin;top:-2cqmin;left:6.5cqmin}
+  .cloud.c2{width:9cqmin;right:12cqmin;bottom:30cqmin}
+  .cloud.c2::before{width:4cqmin;height:4cqmin;top:-2cqmin;left:1.6cqmin}
+  .cloud.c2::after{width:3cqmin;height:3cqmin;top:-1.2cqmin;left:4.6cqmin}
+  .clock.t1 .cloud{opacity:.55}
+  .clock.t2 .cloud{opacity:.9}
+
+  /* 별 */
+  .stars{position:absolute;inset:0;opacity:0;transition:opacity .9s}
+  .clock.t0 .stars,.clock.t3 .stars{opacity:1}
+  .clock.t3 .stars{opacity:.75}
+  .star{position:absolute;border-radius:50%;background:#fff;box-shadow:0 0 .8cqmin rgba(255,255,255,.8)}
+
+  /* ===== 내용: 전부 가운데 정렬 ===== */
+  .content{
+    position:relative;z-index:1;height:100%;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:min(3.5cqmin,4cqh);
+    padding:min(6cqmin,4cqh) 4cqw;
+    text-align:center;
+  }
+  .date{
+    font-size:min(5.6cqw,10cqh);
+    font-weight:700;letter-spacing:.08em;color:var(--text);
+  }
+  .time{
+    display:flex;align-items:baseline;justify-content:center;
+    font-weight:700;color:var(--accent);
+    font-size:min(21cqw,40cqh);line-height:1;
+    font-variant-numeric:tabular-nums;white-space:nowrap;
+  }
+  .sec{
+    font-size:.4em;font-weight:500;color:var(--soft);
+    margin-left:.28em;min-width:1.2em;text-align:left;
+  }
+  .week{display:flex;gap:1.4cqw;width:min(100%,86cqw);justify-content:center}
+  .wday{
+    flex:1;text-align:center;
+    font-size:min(3.2cqw,6.5cqh);font-weight:700;letter-spacing:.04em;
+    padding:.55em 0;border-radius:.9em;
+    color:var(--soft);background:var(--day-bg);
+  }
+  .wday.today{background:var(--today-bg);color:var(--today-text)}
+
+  /* 영역이 낮아지면 요소를 단계적으로 정리 */
+  @container (max-height:170px){ .week{display:none} }
+  @container (max-height:100px){ .date{display:none} }
+  /* 아주 좁으면 요일을 한 글자씩 */
+  @container (max-width:260px){ .wday{font-size:0} .wday::first-letter{font-size:max(9px,3.6cqw)} }
+</style>
+</head>
+<body>
+
+<div class="clock t2" id="clock">
+  <div class="sky sky-0"></div>
+  <div class="sky sky-1"></div>
+  <div class="sky sky-2"></div>
+  <div class="sky sky-3"></div>
+
+  <div class="stars" id="stars"></div>
+  <div class="deco cloud c1"></div>
+  <div class="deco cloud c2"></div>
+  <div class="deco body-slot sun"></div>
+  <div class="deco body-slot moon" id="moon" title=""></div>
+
+  <div class="content">
+    <div class="date" id="date">---, ----</div>
+    <div class="time">
+      <span id="hh">--</span><span>:</span><span id="mm">--</span><span class="sec" id="ss">--</span>
+    </div>
+    <div class="week" id="week">
+      <span class="wday">MON</span><span class="wday">TUE</span><span class="wday">WED</span>
+      <span class="wday">THU</span><span class="wday">FRI</span><span class="wday">SAT</span><span class="wday">SUN</span>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const TZ = "Asia/Seoul";
+  const $ = id => document.getElementById(id);
+  const set = (id, v) => { const el = $(id); if (el.textContent !== v) el.textContent = v; };
+  const WD = { Mon:0, Tue:1, Wed:2, Thu:3, Fri:4, Sat:5, Sun:6 };
+  const days = document.querySelectorAll("#week .wday");
+  const clock = $("clock");
+
+  // ===== 별 (고정 배치, 크기는 영역에 비례) =====
+  const stars = $("stars");
+  let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  for (let i = 0; i < 26; i++) {
+    const s = document.createElement("span");
+    s.className = "star";
+    const size = (0.5 + rnd() * 0.9).toFixed(2);
+    s.style.cssText = `left:${(rnd()*100).toFixed(1)}%;top:${(rnd()*100).toFixed(1)}%;` +
+      `width:${size}cqmin;height:${size}cqmin;opacity:${(0.35 + rnd()*0.65).toFixed(2)}`;
+    stars.appendChild(s);
+  }
+
+  // ===== 오늘의 달 모양 (천문 계산) =====
+  const SYNODIC = 29.530588853;
+  const NEW_MOON = Date.UTC(2000, 0, 6, 18, 14);        // 기준 삭(朔)
+  const NAMES = ["삭(그믐달)","초승달","상현달","차오르는 달","보름달","기우는 달","하현달","그믐달"];
+  function moonPhase(date){
+    const d = (date.getTime() - NEW_MOON) / 86400000;
+    return ((d % SYNODIC) + SYNODIC) / SYNODIC % 1;      // 0=삭, 0.5=보름
+  }
+  function moonSVG(p){
+    const r = 50, c = 50;
+    const waxing = p < 0.5;
+    const q = waxing ? p : 1 - p;                         // 0~0.5
+    const k = Math.cos(2 * Math.PI * q);                  // 1=삭 … -1=보름
+    const rx = (r * Math.abs(k)).toFixed(2);
+    const sweep = k > 0 ? 0 : 1;                          // 초승: 오른쪽으로 볼록 / 망: 왼쪽으로 볼록
+    const lit = `M${c} ${c-r} A${r} ${r} 0 0 1 ${c} ${c+r} A${rx} ${r} 0 0 ${sweep} ${c} ${c-r} Z`;
+    const flip = waxing ? "" : ` transform="translate(100 0) scale(-1 1)"`;  // 북반구 기준: 차오를 땐 오른쪽이 밝음
+    return `<svg viewBox="0 0 100 100" aria-hidden="true">
+      <defs><clipPath id="mc"><circle cx="50" cy="50" r="50"/></clipPath></defs>
+      <circle cx="50" cy="50" r="50" fill="#3b3a6a" opacity=".85"/>
+      <g clip-path="url(#mc)"${flip}>
+        <path d="${lit}" fill="#fff2c4"/>
+      </g>
+      <circle cx="50" cy="50" r="49.5" fill="none" stroke="rgba(255,242,196,.25)"/>
+    </svg>`;
+  }
+  let moonDay = "";
+  function updateMoon(dayKey){
+    if (dayKey === moonDay) return;
+    moonDay = dayKey;
+    const p = moonPhase(new Date());
+    $("moon").innerHTML = moonSVG(p);
+    $("moon").title = NAMES[Math.round(p * 8) % 8] + " · " + Math.round((1 - Math.cos(2*Math.PI*p)) / 2 * 100) + "%";
+  }
+
+  let phase = -1;
+  function tick(){
+    const parts = new Intl.DateTimeFormat("en-US", {
+      timeZone: TZ, hour12:false,
+      year:"numeric", month:"2-digit", day:"2-digit",
+      hour:"2-digit", minute:"2-digit", second:"2-digit", weekday:"short"
+    }).formatToParts(new Date());
+    const get = k => (parts.find(p => p.type === k) || {}).value || "";
+
+    let h = parseInt(get("hour"), 10); if (h === 24) h = 0;
+    set("hh", String(h).padStart(2, "0"));
+    set("mm", get("minute"));
+    set("ss", get("second"));
+
+    // 6시간 단위: 0=00–06, 1=06–12, 2=12–18, 3=18–24
+    const ph = Math.floor(h / 6);
+    if (ph !== phase) {
+      clock.classList.remove("t0","t1","t2","t3");
+      clock.classList.add("t" + ph);
+      phase = ph;
+    }
+
+    const dateStr = `${get("year")}.${get("month")}.${get("day")}`;
+    const MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    set("date", `${MON[parseInt(get("month"), 10) - 1]}${parseInt(get("day"), 10)}, ${get("year")}`);
+    updateMoon(dateStr);
+
+    const wi = WD[get("weekday")];
+    days.forEach((d, i) => d.classList.toggle("today", i === wi));
+  }
+
+  tick();
+  setTimeout(function loop(){
+    tick();
+    setTimeout(loop, 1000 - (Date.now() % 1000));
+  }, 1000 - (Date.now() % 1000));
+})();
+</script>
+</body>
+</html>

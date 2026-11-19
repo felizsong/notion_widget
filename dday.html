@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>D-Day</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Asta+Sans:wght@300..800&family=Jua&display=swap');
+</style>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{width:100%;height:100%;background:transparent;overflow:hidden}
+  body{font-family:'Quicksand',sans-serif}
+
+  .dd{
+    --text:#37352f; --accent:#37352f; --soft:rgba(55,53,47,.6);
+    container-type:size; --size:32px;
+    width:100%; height:100%;
+    display:flex; flex-direction:column; align-items:flex-start; justify-content:center;
+    gap:calc(var(--size)*.2);
+    padding:12px 16px;
+    text-align:left;
+  }
+  @media (prefers-color-scheme:dark){
+    .dd{--text:#ffffffcf; --accent:#fff; --soft:rgba(255,255,255,.55)}
+  }
+  .title{
+    max-width:100%;
+    font-size:calc(var(--size)*.45);font-weight:700;letter-spacing:.03em;color:var(--text);
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  }
+  .dday{
+    font-weight:700;color:var(--accent);line-height:1.05;white-space:nowrap;
+    font-size:var(--size);font-variant-numeric:tabular-nums;
+  }
+  .target{
+    font-size:calc(var(--size)*.38);font-weight:500;letter-spacing:.04em;color:var(--soft);
+  }
+</style>
+</head>
+<body>
+
+<div class="dd">
+  <div class="title" id="title"></div>
+  <div class="dday" id="dday">D-00</div>
+  <div class="target" id="target"></div>
+</div>
+
+<script>
+(function(){
+  const TZ = "Asia/Seoul";
+  const $ = id => document.getElementById(id);
+
+  // 설정: 임베드 URL 뒤에 ?title=내용&date=2026-12-12&size=32
+  const q = new URLSearchParams(location.search);
+  const TITLE = q.get("title") || "크리스마스 파티";
+  const DATE  = /^\d{4}-\d{2}-\d{2}$/.test(q.get("date") || "") ? q.get("date") : "2026-12-12";
+
+  const [ty, tm, td] = DATE.split("-").map(Number);
+  const targetUTC = Date.UTC(ty, tm - 1, td);
+  const MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const DOW = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+  const SIZE = parseFloat(q.get("size"));
+  if (SIZE > 0) document.querySelector(".dd").style.setProperty("--size", SIZE + "px");
+  $("title").textContent = TITLE;
+  $("target").textContent = `${MON[tm-1]}${td}, ${ty}(${DOW[new Date(targetUTC).getUTCDay()]})`;
+
+  let last = "";
+  function tick(){
+    const parts = new Intl.DateTimeFormat("en-US", {
+      timeZone: TZ, year:"numeric", month:"2-digit", day:"2-digit"
+    }).formatToParts(new Date());
+    const get = k => +(parts.find(p => p.type === k) || {}).value;
+    const n = Math.round((targetUTC - Date.UTC(get("year"), get("month") - 1, get("day"))) / 86400000);
+    const text = n === 0 ? "D-Day" : n > 0 ? "D-" + String(n).padStart(2, "0") : "D+" + String(-n).padStart(2, "0");
+    if (text !== last) { $("dday").textContent = text; last = text; }
+  }
+  tick();
+  setInterval(tick, 30000);
+})();
+</script>
+</body>
+</html>
