@@ -12,12 +12,13 @@
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
   html,body{width:100%;height:100%;background:transparent;overflow:hidden}
+  body{padding:8px}
   body{font-family:'Quicksand',sans-serif}
 
   /* 임베드 영역 전체를 채우고, 내부 크기는 영역 크기(cqw/cqh/cqmin)에 비례 */
   .clock{
     position:relative; overflow:hidden;
-    width:100%; height:100%;
+    width:100%; height:100%; max-width:300px; max-height:170px;
     container-type:size;
     border-radius:min(9cqmin,32px);
     color:var(--text);
@@ -98,28 +99,28 @@
   .content{
     position:relative;z-index:1;height:100%;
     display:flex;flex-direction:column;align-items:center;justify-content:center;
-    gap:min(3.5cqmin,4cqh);
+    gap:min(2.5cqmin,3cqh);
     padding:min(6cqmin,4cqh) 4cqw;
     text-align:center;
   }
   .date{
-    font-size:min(5.6cqw,10cqh);
+    font-size:min(5cqw,9.5cqh);
     font-weight:700;letter-spacing:.08em;color:var(--text);
   }
   .time{
     display:flex;align-items:baseline;justify-content:center;
     font-weight:700;color:var(--accent);
-    font-size:min(21cqw,40cqh);line-height:1;
+    font-size:min(18cqw,35cqh);line-height:1;
     font-variant-numeric:tabular-nums;white-space:nowrap;
   }
   .sec{
     font-size:.4em;font-weight:500;color:var(--soft);
     margin-left:.28em;min-width:1.2em;text-align:left;
   }
-  .week{display:flex;gap:1.4cqw;width:min(100%,86cqw);justify-content:center}
+  .week{display:flex;gap:1.4cqw;width:min(100%,70cqw);justify-content:center}
   .wday{
     flex:1;text-align:center;
-    font-size:min(3.2cqw,6.5cqh);font-weight:700;letter-spacing:.04em;
+    font-size:min(3cqw,6.2cqh);font-weight:700;letter-spacing:.04em;
     padding:.55em 0;border-radius:.9em;
     color:var(--soft);background:var(--day-bg);
   }
@@ -238,7 +239,7 @@
 
     const dateStr = `${get("year")}.${get("month")}.${get("day")}`;
     const MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-    set("date", `${MON[parseInt(get("month"), 10) - 1]}${parseInt(get("day"), 10)}, ${get("year")}`);
+    set("date", `${MON[parseInt(get("month"), 10) - 1]}${parseInt(get("day"), 10)}, ${get("year")} (${get("weekday")})`);
     updateMoon(dateStr);
 
     const wi = WD[get("weekday")];
